@@ -17,7 +17,17 @@ callWithJQuery ($) ->
             key = []
             addKey = false
             for attr in attrs
-                key.push record[attr] ? "null"
+                if typeof record[attr] is "string"
+                    key.push record[attr] ? "null"
+                else
+                    nPos = 1
+                    aPos = attrs.indexOf attr
+                    for nAttr in record[attr]
+                        attrs.splice aPos+(nPos++), 0, nAttr
+                        key.push record[nAttr]
+                    if nPos > 1
+                        attrs.splice aPos, 1
+
                 flatKey = key.join(String.fromCharCode(0))
                 if not totals[flatKey]
                     totals[flatKey] = f(key.slice())
@@ -25,16 +35,15 @@ callWithJQuery ($) ->
                 totals[flatKey].push record
             if addKey
                 keys.push key
-            return key
+            return [key, attrs]
 
         processRecord: (record) -> #this code is called in a tight loop
             rowKey = []
             colKey = []
-
             @allTotal.push record
-            rowKey = processKey record, @rowTotals, @rowKeys, @rowAttrs, (key) =>
+            [rowKey, @rowAttrs] = processKey record, @rowTotals, @rowKeys, @rowAttrs, (key) =>
                     return @aggregator(this, key, [])
-            colKey = processKey record, @colTotals, @colKeys, @colAttrs, (key) =>
+            [colKey, @colAttrs] = processKey record, @colTotals, @colKeys, @colAttrs, (key) =>
                     return @aggregator(this, [], key)
             m = rowKey.length-1
             n = colKey.length-1

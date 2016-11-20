@@ -25,12 +25,26 @@
       }
 
       processKey = function(record, totals, keys, attrs, f) {
-        var addKey, attr, flatKey, k, key, len, ref;
+        var aPos, addKey, attr, flatKey, k, key, l, len, len1, nAttr, nPos, ref, ref1;
         key = [];
         addKey = false;
         for (k = 0, len = attrs.length; k < len; k++) {
           attr = attrs[k];
-          key.push((ref = record[attr]) != null ? ref : "null");
+          if (typeof record[attr] === "string") {
+            key.push((ref = record[attr]) != null ? ref : "null");
+          } else {
+            nPos = 1;
+            aPos = attrs.indexOf(attr);
+            ref1 = record[attr];
+            for (l = 0, len1 = ref1.length; l < len1; l++) {
+              nAttr = ref1[l];
+              attrs.splice(aPos + (nPos++), 0, nAttr);
+              key.push(record[nAttr]);
+            }
+            if (nPos > 1) {
+              attrs.splice(aPos, 1);
+            }
+          }
           flatKey = key.join(String.fromCharCode(0));
           if (!totals[flatKey]) {
             totals[flatKey] = f(key.slice());
@@ -41,40 +55,40 @@
         if (addKey) {
           keys.push(key);
         }
-        return key;
+        return [key, attrs];
       };
 
       SubtotalPivotData.prototype.processRecord = function(record) {
-        var colKey, fColKey, fRowKey, flatColKey, flatRowKey, i, j, k, m, n, ref, results, rowKey;
+        var colKey, fColKey, fRowKey, flatColKey, flatRowKey, i, j, k, m, n, ref, ref1, ref2, results, rowKey;
         rowKey = [];
         colKey = [];
         this.allTotal.push(record);
-        rowKey = processKey(record, this.rowTotals, this.rowKeys, this.rowAttrs, (function(_this) {
+        ref = processKey(record, this.rowTotals, this.rowKeys, this.rowAttrs, (function(_this) {
           return function(key) {
             return _this.aggregator(_this, key, []);
           };
-        })(this));
-        colKey = processKey(record, this.colTotals, this.colKeys, this.colAttrs, (function(_this) {
+        })(this)), rowKey = ref[0], this.rowAttrs = ref[1];
+        ref1 = processKey(record, this.colTotals, this.colKeys, this.colAttrs, (function(_this) {
           return function(key) {
             return _this.aggregator(_this, [], key);
           };
-        })(this));
+        })(this)), colKey = ref1[0], this.colAttrs = ref1[1];
         m = rowKey.length - 1;
         n = colKey.length - 1;
         if (m < 0 || n < 0) {
           return;
         }
         results = [];
-        for (i = k = 0, ref = m; 0 <= ref ? k <= ref : k >= ref; i = 0 <= ref ? ++k : --k) {
+        for (i = k = 0, ref2 = m; 0 <= ref2 ? k <= ref2 : k >= ref2; i = 0 <= ref2 ? ++k : --k) {
           fRowKey = rowKey.slice(0, i + 1);
           flatRowKey = fRowKey.join(String.fromCharCode(0));
           if (!this.tree[flatRowKey]) {
             this.tree[flatRowKey] = {};
           }
           results.push((function() {
-            var l, ref1, results1;
+            var l, ref3, results1;
             results1 = [];
-            for (j = l = 0, ref1 = n; 0 <= ref1 ? l <= ref1 : l >= ref1; j = 0 <= ref1 ? ++l : --l) {
+            for (j = l = 0, ref3 = n; 0 <= ref3 ? l <= ref3 : l >= ref3; j = 0 <= ref3 ? ++l : --l) {
               fColKey = colKey.slice(0, j + 1);
               flatColKey = fColKey.join(String.fromCharCode(0));
               if (!this.tree[flatRowKey][flatColKey]) {
